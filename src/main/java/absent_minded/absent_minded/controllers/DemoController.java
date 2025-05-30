@@ -38,8 +38,6 @@ public class DemoController {
         {
             "label": "一句話說明此任務主題",
             "description": "請補全一段具體可執行的細節規劃或建議步驟",
-            "start": "2025-05-22T00:00:00",        // 請以今天日期開始
-            "deadline": "2025-06-21T00:00:00"     // 根據任務合理推估（通常 7-30 天）
         }
         """;
         String fullPrompt = systemPrompt + "\nUser: " + userInput;

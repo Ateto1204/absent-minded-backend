@@ -2,5 +2,9 @@ package absent_minded.absent_minded.repositories;
 
 import absent_minded.absent_minded.models.Task;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
 
-public interface TaskRepository extends JpaRepository<Task, String> {}
+public interface TaskRepository extends JpaRepository<Task, String> {
+    List<Task> findByUserId(String userId);
+    List<Task> findByProjectId(String projectId);
+}

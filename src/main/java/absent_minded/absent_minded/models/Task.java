@@ -8,7 +8,8 @@ import java.time.LocalDateTime;
 public class Task {
     @Id
     private String id;
-    private String project;
+    private String userId;
+    private String projectId;
     private String parent;
 
     @Embedded
@@ -25,12 +26,20 @@ public class Task {
         this.id = id;
     }
 
-    public String getProject() {
-        return project;
+    public String getUserId() {
+        return userId;
     }
 
-    public void setProject(String project) {
-        this.project = project;
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(String projectId) {
+        this.projectId = projectId;
     }
 
     public String getParent() {

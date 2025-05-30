@@ -18,6 +18,11 @@ public class ProjectController {
     @GetMapping("/{id}")
     public Project getById(@PathVariable String id) { return repo.findById(id).orElse(null); }
 
+    @GetMapping("/user/{userId}")
+    public List<Project> getByUserId(@PathVariable String userId) {
+        return repo.findByUserId(userId);
+    }
+
     @PostMapping
     public Project create(@RequestBody Project project) { return repo.save(project); }
 

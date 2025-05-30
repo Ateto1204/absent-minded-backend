@@ -21,6 +21,36 @@ public class TaskController {
     @PostMapping
     public Task create(@RequestBody Task task) { return repo.save(task); }
 
+    // 1. 根據 userId 查詢 tasks
+    @GetMapping("/user/{userId}")
+    public List<Task> getTasksByUserId(@PathVariable String userId) {
+        return repo.findByUserId(userId);
+    }
+
+    // 2. 根據 projectId 查詢 tasks
+    @GetMapping("/project/{projectId}")
+    public List<Task> getTasksByProjectId(@PathVariable String projectId) {
+        return repo.findByProjectId(projectId);
+    }
+
+    // 3. 批次新增 tasks
+    @PostMapping("/batch")
+    public List<Task> createTasks(@RequestBody List<Task> tasks) {
+        return repo.saveAll(tasks);
+    }
+
+    // 4. 批次刪除 tasks
+    @DeleteMapping("/batch")
+    public void deleteTasks(@RequestBody List<String> ids) {
+        ids.forEach(repo::deleteById);
+    }
+
+    // 5. 批次更新 tasks
+    @PutMapping("/batch")
+    public List<Task> updateTasks(@RequestBody List<Task> tasks) {
+        return repo.saveAll(tasks);
+    }
+
     @PutMapping("/{id}")
     public Task update(@PathVariable String id, @RequestBody Task task) {
         task.setId(id);

@@ -10,7 +10,7 @@ public class Project {
     private String name;
     private String userId;
     private String rootTask;
-    // getter/setter
+
     public String getId() {
         return id;
     }

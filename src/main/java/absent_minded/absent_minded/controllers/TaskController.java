@@ -3,12 +3,13 @@ package absent_minded.absent_minded.controllers;
 import absent_minded.absent_minded.models.Task;
 import absent_minded.absent_minded.repositories.TaskRepository;
 import absent_minded.absent_minded.services.AuthService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/tasks")
+@RequestMapping("/api/tasks")
 public class TaskController {
 
     private final TaskRepository repo;
@@ -19,10 +20,12 @@ public class TaskController {
         this.auth = auth;
     }
 
-    @GetMapping()
+    @GetMapping
     public List<Task> getTasksByUserId(@RequestHeader("Authorization") String authHeader) {
         String email = auth.emailFromAuthHeader(authHeader);
-        return repo.findAllByUserId(email);
+        List<Task> tasks = repo.findAllByUserId(email);
+        if (tasks == null) return java.util.Collections.emptyList();
+        return tasks;
     }
 
     @GetMapping("/project/{projectId}")
@@ -49,6 +52,7 @@ public class TaskController {
     }
 
     @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@RequestHeader("Authorization") String authHeader,
                        @RequestBody List<String> ids) {
         String email = auth.emailFromAuthHeader(authHeader);

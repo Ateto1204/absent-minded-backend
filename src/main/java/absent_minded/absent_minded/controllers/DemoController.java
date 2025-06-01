@@ -1,16 +1,20 @@
 package absent_minded.absent_minded.controllers;
 
-import absent_minded.absent_minded.models.Project;
-import absent_minded.absent_minded.models.Task;
-import absent_minded.absent_minded.services.AuthService;
-import dev.langchain4j.model.openai.OpenAiChatModel;
-import org.springframework.web.bind.annotation.*;
-
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import absent_minded.absent_minded.services.AuthService;
+import dev.langchain4j.model.openai.OpenAiChatModel;
+
 @RestController
+@RequestMapping("/api")
 public class DemoController {
     private OpenAiChatModel model;
     private final AuthService auth;
@@ -23,6 +27,11 @@ public class DemoController {
                 .modelName("gpt-4o-mini")
                 .build();
     }
+    @GetMapping
+    public String demo() {
+        return "hello absent minded";
+    }
+
     @PostMapping("/gpt")
     public String createTaskFromChat(@RequestHeader("Authorization") String authHeader,
                                      @RequestBody Map<String, String> body) throws IOException {

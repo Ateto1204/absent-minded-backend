@@ -23,6 +23,11 @@ public class DemoController {
                 .modelName("gpt-4o-mini")
                 .build();
     }
+    @GetMapping("/demo")
+    public String demo() {
+        return "hello absent minded";
+    }
+
     @PostMapping("/gpt")
     public String createTaskFromChat(@RequestHeader("Authorization") String authHeader,
                                      @RequestBody Map<String, String> body) throws IOException {

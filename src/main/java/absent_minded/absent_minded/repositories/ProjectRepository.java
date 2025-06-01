@@ -9,10 +9,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProjectRepository extends JpaRepository<Project, String> {
-    List<Project> findAllByUserId(String userId);
+    List<Project> findAllByOwnerId(String ownerId);
 
-    Optional<Project> findByIdAndUserId(String id, String userId);
+    Optional<Project> findByIdAndOwnerId(String id, String ownerId);
+
     @Transactional
     @Modifying
-    int deleteByIdAndUserId(String id, String userId);
+    int deleteByIdAndOwnerId(String id, String ownerId);
+
+    List<Project> findAllByParticipantsContains(String email);
 }

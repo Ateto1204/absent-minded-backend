@@ -1,4 +1,3 @@
-// TaskRepository.java
 package absent_minded.absent_minded.repositories;
 
 import absent_minded.absent_minded.models.Task;
@@ -9,12 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 public interface TaskRepository extends JpaRepository<Task, String> {
-
-    List<Task> findAllByUserId(String userId);
-
-    List<Task> findAllByUserIdAndProject(String userId, String project);
+    List<Task> findAllByOwnerId(String ownerId);
+    List<Task> findAllByOwnerIdAndProject(String ownerId, String project);
 
     @Transactional
     @Modifying
-    void deleteAllByIdInAndUserId(Iterable<String> ids, String userId);
+    void deleteAllByIdInAndOwnerId(Iterable<String> ids, String ownerId);
+
+    List<Task> findAllByParticipantsContains(String email);
 }

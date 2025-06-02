@@ -25,7 +25,7 @@ public class TaskController {
     }
 
     @GetMapping
-    public List<Task> getTasksByOwnerId(@RequestHeader("Authorization") String authHeader) {
+    public List<Task> getAll(@RequestHeader("Authorization") String authHeader) {
         String email = auth.emailFromAuthHeader(authHeader);
         Set<Task> allTasks = new HashSet<>();
 
@@ -39,7 +39,12 @@ public class TaskController {
     public List<Task> getByProject(@PathVariable String projectId,
                                    @RequestHeader("Authorization") String authHeader) {
         String email = auth.emailFromAuthHeader(authHeader);
-        return repo.findAllByOwnerIdAndProject(email, projectId);
+        Set<Task> allTasks = new HashSet<>();
+
+        allTasks.addAll(repo.findAllByOwnerIdAndProject(email, projectId));
+        allTasks.addAll((repo.findAllByParticipantsContainsAndProject(email, projectId)));
+
+        return new ArrayList<>(allTasks);
     }
 
     @PostMapping

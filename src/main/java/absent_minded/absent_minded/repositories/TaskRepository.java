@@ -16,4 +16,5 @@ public interface TaskRepository extends JpaRepository<Task, String> {
     void deleteAllByIdInAndOwnerId(Iterable<String> ids, String ownerId);
 
     List<Task> findAllByParticipantsContains(String email);
+    List<Task> findAllByParticipantsContainsAndProject(String email, String project);
 }

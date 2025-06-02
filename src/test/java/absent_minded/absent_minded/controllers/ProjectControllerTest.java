@@ -1,5 +1,6 @@
 package absent_minded.absent_minded.controllers;
 
+import absent_minded.absent_minded.services.AuthService;
 import org.springframework.test.context.ActiveProfiles;
 import absent_minded.absent_minded.models.Project;
 import absent_minded.absent_minded.repositories.ProjectRepository;
@@ -34,6 +35,9 @@ public class ProjectControllerTest {
     @MockBean
     private ProjectRepository projectRepository;
 
+    @MockBean
+    private AuthService auth;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -54,16 +58,16 @@ public class ProjectControllerTest {
         p3.setName("Project C");
         p3.setUserId("user1");
 
-        when(projectRepository.findAll()).thenReturn(Arrays.asList(p1, p2, p3));
+        when(auth.emailFromAuthHeader("Bearer test-token")).thenReturn("user1");
+        when(projectRepository.findAllByUserId("user1")).thenReturn(Arrays.asList(p1, p3));
 
-        System.out.println("Returned Projects JSON: " + objectMapper.writeValueAsString(Arrays.asList(p1, p2, p3)));
+        System.out.println("Returned Projects JSON: " + objectMapper.writeValueAsString(Arrays.asList(p1, p3)));
 
-        mockMvc.perform(get("/projects"))
+        mockMvc.perform(get("/api/projects").header("Authorization", "Bearer test-token"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size()").value(3))
+                .andExpect(jsonPath("$.size()").value(2))
                 .andExpect(jsonPath("$[0].userId").value("user1"))
-                .andExpect(jsonPath("$[1].userId").value("user2"))
-                .andExpect(jsonPath("$[2].userId").value("user1"));
+                .andExpect(jsonPath("$[1].userId").value("user1"));
     }
 
     @Test
@@ -73,11 +77,12 @@ public class ProjectControllerTest {
         p.setName("Project A");
         p.setUserId("user1");
 
-        when(projectRepository.findById("1")).thenReturn(Optional.of(p));
+        when(auth.emailFromAuthHeader("Bearer test-token")).thenReturn("user1");
+        when(projectRepository.findByIdAndUserId("1", "user1")).thenReturn(Optional.of(p));
 
         System.out.println("Returned Project JSON: " + objectMapper.writeValueAsString(p));
 
-        mockMvc.perform(get("/projects/1"))
+        mockMvc.perform(get("/api/projects/1").header("Authorization", "Bearer test-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Project A"));
     }
@@ -98,7 +103,7 @@ public class ProjectControllerTest {
         System.out.println("Input JSON: " + objectMapper.writeValueAsString(input));
         System.out.println("Expected Saved JSON: " + objectMapper.writeValueAsString(saved));
 
-        mockMvc.perform(post("/projects")
+        mockMvc.perform(post("/api/projects").header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(input)))
                 .andExpect(status().isOk())
@@ -109,8 +114,11 @@ public class ProjectControllerTest {
     @Test
     public void testDeleteProject() throws Exception {
         System.out.println("DELETE /projects/1 called");
-        mockMvc.perform(delete("/projects/1"))
-                .andExpect(status().isOk());
+        // Mock setup to simulate finding and deleting a project by ID and user ID
+        when(auth.emailFromAuthHeader("Bearer test-token")).thenReturn("user1");
+        when(projectRepository.deleteByIdAndUserId("1", "user1")).thenReturn(1);
+        mockMvc.perform(delete("/api/projects/1").header("Authorization", "Bearer test-token"))
+                .andExpect(status().isNoContent());
     }
 
     @Test
@@ -125,12 +133,13 @@ public class ProjectControllerTest {
         updated.setName("Updated Name");
         updated.setUserId("user1");
 
-        when(projectRepository.findById("123")).thenReturn(Optional.of(existing));
+        when(auth.emailFromAuthHeader("Bearer test-token")).thenReturn("user1");
+        when(projectRepository.findByIdAndUserId("123", "user1")).thenReturn(Optional.of(existing));
         when(projectRepository.save(any(Project.class))).thenReturn(updated);
 
         System.out.println("Update Project - Input: " + objectMapper.writeValueAsString(updated));
 
-        mockMvc.perform(put("/projects/123")
+        mockMvc.perform(put("/api/projects/123").header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updated)))
                 .andExpect(status().isOk())

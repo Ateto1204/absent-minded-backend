@@ -10,6 +10,7 @@ public class Task {
     private String id;
     private String project;
     private String parent;
+    private String userId;
 
     @Embedded
     private TaskData data;
@@ -40,6 +41,8 @@ public class Task {
     public void setParent(String parent) {
         this.parent = parent;
     }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
     public TaskData getData() {
         return data;

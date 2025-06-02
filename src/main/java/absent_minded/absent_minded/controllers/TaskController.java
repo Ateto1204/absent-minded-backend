@@ -1,12 +1,16 @@
 package absent_minded.absent_minded.controllers;
 
+import absent_minded.absent_minded.models.Project;
 import absent_minded.absent_minded.models.Task;
 import absent_minded.absent_minded.repositories.TaskRepository;
 import absent_minded.absent_minded.services.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -21,25 +25,33 @@ public class TaskController {
     }
 
     @GetMapping
-    public List<Task> getTasksByUserId(@RequestHeader("Authorization") String authHeader) {
+    public List<Task> getAll(@RequestHeader("Authorization") String authHeader) {
         String email = auth.emailFromAuthHeader(authHeader);
-        List<Task> tasks = repo.findAllByUserId(email);
-        if (tasks == null) return java.util.Collections.emptyList();
-        return tasks;
+        Set<Task> allTasks = new HashSet<>();
+
+        allTasks.addAll(repo.findAllByOwnerId(email));
+        allTasks.addAll(repo.findAllByParticipantsContains(email));
+
+        return new ArrayList<>(allTasks);
     }
 
     @GetMapping("/project/{projectId}")
     public List<Task> getByProject(@PathVariable String projectId,
                                    @RequestHeader("Authorization") String authHeader) {
         String email = auth.emailFromAuthHeader(authHeader);
-        return repo.findAllByUserIdAndProject(email, projectId);
+        Set<Task> allTasks = new HashSet<>();
+
+        allTasks.addAll(repo.findAllByOwnerIdAndProject(email, projectId));
+        allTasks.addAll((repo.findAllByParticipantsContainsAndProject(email, projectId)));
+
+        return new ArrayList<>(allTasks);
     }
 
     @PostMapping
     public List<Task> create(@RequestHeader("Authorization") String authHeader,
                              @RequestBody List<Task> tasks) {
         String email = auth.emailFromAuthHeader(authHeader);
-        tasks.forEach(t -> t.setUserId(email));
+        tasks.forEach(t -> t.setOwnerId(email));
         return repo.saveAll(tasks);
     }
 
@@ -47,7 +59,7 @@ public class TaskController {
     public List<Task> update(@RequestHeader("Authorization") String authHeader,
                              @RequestBody List<Task> tasks) {
         String email = auth.emailFromAuthHeader(authHeader);
-        tasks.forEach(t -> t.setUserId(email));
+        tasks.forEach(t -> t.setOwnerId(email));
         return repo.saveAll(tasks);
     }
 
@@ -56,6 +68,6 @@ public class TaskController {
     public void delete(@RequestHeader("Authorization") String authHeader,
                        @RequestBody List<String> ids) {
         String email = auth.emailFromAuthHeader(authHeader);
-        repo.deleteAllByIdInAndUserId(ids, email);
+        repo.deleteAllByIdInAndOwnerId(ids, email);
     }
 }

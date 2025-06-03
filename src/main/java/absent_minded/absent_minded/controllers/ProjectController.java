@@ -117,4 +117,25 @@ public class ProjectController {
 
         return repo.save(project);
     }
+
+    @DeleteMapping("/{id}/participants")
+    public Project removeParticipant(@RequestHeader("Authorization") String authHeader,
+                                     @PathVariable String id,
+                                     @RequestBody Map<String, String> body) {
+        String requesterEmail = auth.emailFromAuthHeader(authHeader);
+        Project project = repo.findById(id)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+        if (!project.getOwnerId().equals(requesterEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only owner can remove participants");
+        }
+        String participant = body.get("email");
+        if (participant == null || participant.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing participant email in request body");
+        }
+        if (project.getParticipants() != null && project.getParticipants().remove(participant)) {
+            repo.save(project);
+        }
+        return project;
+    }
 }

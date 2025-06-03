@@ -51,7 +51,12 @@ public class TaskController {
     public List<Task> create(@RequestHeader("Authorization") String authHeader,
                              @RequestBody List<Task> tasks) {
         String email = auth.emailFromAuthHeader(authHeader);
-        tasks.forEach(t -> t.setOwnerId(email));
+        tasks.forEach(t -> {
+            List<String> participants = t.getParticipants();
+            if (!participants.contains(email)) {
+                t.setOwnerId(email);
+            }
+        });
         return repo.saveAll(tasks);
     }
 
@@ -59,7 +64,12 @@ public class TaskController {
     public List<Task> update(@RequestHeader("Authorization") String authHeader,
                              @RequestBody List<Task> tasks) {
         String email = auth.emailFromAuthHeader(authHeader);
-        tasks.forEach(t -> t.setOwnerId(email));
+        tasks.forEach(t -> {
+            List<String> participants = t.getParticipants();
+            if (!participants.contains(email)) {
+                t.setOwnerId(email);
+            }
+        });
         return repo.saveAll(tasks);
     }
 
@@ -68,6 +78,11 @@ public class TaskController {
     public void delete(@RequestHeader("Authorization") String authHeader,
                        @RequestBody List<String> ids) {
         String email = auth.emailFromAuthHeader(authHeader);
-        repo.deleteAllByIdInAndOwnerId(ids, email);
+        List<Task> tasks = repo.findAllById(ids);
+        List<String> allowedToDelete = tasks.stream()
+                .filter(t -> email.equals(t.getOwnerId()) || t.getParticipants().contains(email))
+                .map(Task::getId)
+                .toList();
+        repo.deleteAllById(allowedToDelete);
     }
 }

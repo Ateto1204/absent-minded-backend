@@ -1,7 +1,8 @@
 package absent_minded.absent_minded.models;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "tasks")
@@ -10,12 +11,19 @@ public class Task {
     private String id;
     private String project;
     private String parent;
-    private String userId;
+    private String ownerId;
 
     @Embedded
     private TaskData data;
 
     private String status;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "task_participants",
+            joinColumns = @JoinColumn(name = "task_id")
+    )
+    private List<String> participants = new ArrayList<>();
 
     // getter/setter
     public String getId() {
@@ -41,8 +49,14 @@ public class Task {
     public void setParent(String parent) {
         this.parent = parent;
     }
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
+
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
 
     public TaskData getData() {
         return data;
@@ -58,5 +72,13 @@ public class Task {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public List<String> getParticipants() {
+        return participants;
+    }
+
+    public void setParticipants(List<String> participants) {
+        this.participants = participants;
     }
 }

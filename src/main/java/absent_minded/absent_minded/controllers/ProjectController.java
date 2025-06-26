@@ -41,7 +41,7 @@ public class ProjectController {
     @GetMapping("/{id}")
     public Project getById(@RequestHeader("Authorization") String header,
                            @PathVariable String id) {
-        return service.getProjectById(header, id);
+        return service.getProjectById(id, header);
     }
 
     @PostMapping

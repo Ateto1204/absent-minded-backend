@@ -2,9 +2,9 @@ package absent_minded.absent_minded.services;
 
 import absent_minded.absent_minded.models.Project;
 import absent_minded.absent_minded.repositories.ProjectRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Optional;
 
 @Service
 public class ProjectService {
@@ -17,10 +17,18 @@ public class ProjectService {
         this.auth = auth;
     }
 
-    public Project getProjectById(String header, String id) {
-        String email = auth.emailFromAuthHeader(header);
-        return repo.findByIdAndOwnerId(id, email)
-                .orElseThrow(() ->
-                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+    public Project getProjectById(String projectId, String header) {
+        String visitor = auth.emailFromAuthHeader(header);
+        Optional<Project> optionalProject = repo.findById(projectId);
+        if (optionalProject.isEmpty()) {
+            return null;
+        }
+        Project project = optionalProject.get();
+
+        if (!project.getOwnerId().equals(visitor) &&
+                (project.getParticipants() == null || !project.getParticipants().contains(visitor))) {
+            return null;
+        }
+        return project;
     }
 }

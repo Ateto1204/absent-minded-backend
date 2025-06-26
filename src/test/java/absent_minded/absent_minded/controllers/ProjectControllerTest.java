@@ -3,6 +3,7 @@ package absent_minded.absent_minded.controllers;
 import absent_minded.absent_minded.models.Project;
 import absent_minded.absent_minded.repositories.ProjectRepository;
 import absent_minded.absent_minded.services.AuthService;
+import absent_minded.absent_minded.services.ProjectService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,8 @@ public class ProjectControllerTest {
 
     @MockitoBean
     private AuthService auth;
+    @MockitoBean
+    private ProjectService projectService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -66,16 +69,18 @@ public class ProjectControllerTest {
     }
 
     @Test
-    public void testGetProjectById() throws Exception {
-        Project p = new Project();
-        p.setId("1");
-        p.setName("Project A");
-        p.setOwnerId("user1");
+    void testGetProjectById() throws Exception {
+        Project project = new Project();
+        project.setId("1");
+        project.setName("Project A");
+        project.setOwnerId("user1");
+        project.setParticipants(List.of("user2"));
 
         when(auth.emailFromAuthHeader("Bearer test-token")).thenReturn("user1");
-        when(projectRepository.findByIdAndOwnerId("1", "user1")).thenReturn(Optional.of(p));
+        when(projectService.getProjectById("1", "Bearer test-token")).thenReturn(project);
 
-        mockMvc.perform(get("/api/projects/1").header("Authorization", "Bearer test-token"))
+        mockMvc.perform(get("/api/projects/1")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Project A"));
     }

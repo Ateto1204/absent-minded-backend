@@ -52,7 +52,7 @@ public class AgentControllerTest {
 
     @Test
     void testDemoEndpoint() throws Exception {
-        mockMvc.perform(get("/api"))
+        mockMvc.perform(get("/api/demo"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("hello absent minded"));
     }

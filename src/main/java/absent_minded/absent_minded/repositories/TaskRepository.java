@@ -10,6 +10,7 @@ import java.util.List;
 public interface TaskRepository extends JpaRepository<Task, String> {
     List<Task> findAllByOwnerId(String ownerId);
     List<Task> findAllByOwnerIdAndProject(String ownerId, String project);
+    List<Task> findAllByProject(String project);
 
     @Transactional
     @Modifying

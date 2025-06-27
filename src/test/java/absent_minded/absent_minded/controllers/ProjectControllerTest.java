@@ -77,7 +77,7 @@ public class ProjectControllerTest {
         project.setParticipants(List.of("user2"));
 
         when(auth.emailFromAuthHeader("Bearer test-token")).thenReturn("user1");
-        when(projectService.getProjectById("1", "Bearer test-token")).thenReturn(project);
+        when(projectService.getProjectById("Bearer test-token", "1")).thenReturn(project);
 
         mockMvc.perform(get("/api/projects/1")
                         .header("Authorization", "Bearer test-token"))

@@ -17,7 +17,7 @@ public class ProjectService {
         this.auth = auth;
     }
 
-    public Project getProjectById(String projectId, String header) {
+    public Project getProjectById(String header, String projectId) {
         String visitor = auth.emailFromAuthHeader(header);
         Optional<Project> optionalProject = repo.findById(projectId);
         if (optionalProject.isEmpty()) {

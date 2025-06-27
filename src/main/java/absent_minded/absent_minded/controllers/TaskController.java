@@ -31,14 +31,8 @@ public class TaskController {
     }
 
     @GetMapping
-    public List<Task> getAll(@RequestHeader("Authorization") String authHeader) {
-        String email = auth.emailFromAuthHeader(authHeader);
-        Set<Task> allTasks = new HashSet<>();
-
-        allTasks.addAll(repo.findAllByOwnerId(email));
-        allTasks.addAll(repo.findAllByParticipantsContains(email));
-
-        return new ArrayList<>(allTasks);
+    public List<Task> getAllTasks(@RequestHeader("Authorization") String header) {
+        return service.getAllTasks(header);
     }
 
     @GetMapping("/project/{projectId}")

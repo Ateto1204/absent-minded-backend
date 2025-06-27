@@ -18,14 +18,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(DemoController.class)
-public class DemoControllerTest {
+@WebMvcTest(AgentController.class)
+public class AgentControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
-    private DemoController controller;
+    private AgentController controller;
 
     @MockitoBean
     private AuthService authService;
@@ -52,7 +52,7 @@ public class DemoControllerTest {
 
     @Test
     void testDemoEndpoint() throws Exception {
-        mockMvc.perform(get("/api"))
+        mockMvc.perform(get("/api/demo"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("hello absent minded"));
     }

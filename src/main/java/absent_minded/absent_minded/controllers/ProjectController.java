@@ -3,6 +3,7 @@ package absent_minded.absent_minded.controllers;
 import absent_minded.absent_minded.models.Project;
 import absent_minded.absent_minded.repositories.ProjectRepository;
 import absent_minded.absent_minded.services.AuthService;
+import absent_minded.absent_minded.services.ProjectService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,14 +16,19 @@ public class ProjectController {
 
     private final ProjectRepository repo;
     private final AuthService       auth;
+    private final ProjectService service;
 
-    public ProjectController(ProjectRepository repo, AuthService auth) {
+    public ProjectController(
+            ProjectRepository repo,
+            AuthService auth,
+            ProjectService service) {
         this.repo = repo;
         this.auth = auth;
+        this.service = service;
     }
 
     @GetMapping
-    public List<Project> getAll(@RequestHeader("Authorization") String authHeader) {
+    public List<Project> getAllProjects(@RequestHeader("Authorization") String authHeader) {
         String email = auth.emailFromAuthHeader(authHeader);
         Set<Project> allProjects = new HashSet<>();
 
@@ -33,16 +39,13 @@ public class ProjectController {
     }
 
     @GetMapping("/{id}")
-    public Project getById(@RequestHeader("Authorization") String authHeader,
+    public Project getProjectById(@RequestHeader("Authorization") String header,
                            @PathVariable String id) {
-        String email = auth.emailFromAuthHeader(authHeader);
-        return repo.findByIdAndOwnerId(id, email)
-                .orElseThrow(() ->
-                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+        return service.getProjectById(id, header);
     }
 
     @PostMapping
-    public Project create(@RequestHeader("Authorization") String authHeader,
+    public Project createProject(@RequestHeader("Authorization") String authHeader,
                           @RequestBody Project project) {
         String email = auth.emailFromAuthHeader(authHeader);
 
@@ -55,7 +58,7 @@ public class ProjectController {
     }
 
     @PutMapping("/{id}")
-    public Project update(@RequestHeader("Authorization") String authHeader,
+    public Project updateProject(@RequestHeader("Authorization") String authHeader,
                           @PathVariable String id,
                           @RequestBody Project project) {
         String email = auth.emailFromAuthHeader(authHeader);

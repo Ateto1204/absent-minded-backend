@@ -4,6 +4,7 @@ import absent_minded.absent_minded.models.Project;
 import absent_minded.absent_minded.models.Task;
 import absent_minded.absent_minded.repositories.TaskRepository;
 import absent_minded.absent_minded.services.AuthService;
+import absent_minded.absent_minded.services.TaskService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,10 +19,15 @@ public class TaskController {
 
     private final TaskRepository repo;
     private final AuthService     auth;
+    private final TaskService service;
 
-    public TaskController(TaskRepository repo, AuthService auth) {
+    public TaskController(
+            TaskRepository repo,
+            AuthService auth,
+            TaskService service) {
         this.repo = repo;
         this.auth = auth;
+        this.service = service;
     }
 
     @GetMapping
@@ -37,14 +43,8 @@ public class TaskController {
 
     @GetMapping("/project/{projectId}")
     public List<Task> getByProject(@PathVariable String projectId,
-                                   @RequestHeader("Authorization") String authHeader) {
-        String email = auth.emailFromAuthHeader(authHeader);
-        Set<Task> allTasks = new HashSet<>();
-
-        allTasks.addAll(repo.findAllByOwnerIdAndProject(email, projectId));
-        allTasks.addAll((repo.findAllByParticipantsContainsAndProject(email, projectId)));
-
-        return new ArrayList<>(allTasks);
+                                   @RequestHeader("Authorization") String header) {
+        return service.getTasksByProject(header, projectId);
     }
 
     @PostMapping

@@ -15,10 +15,10 @@ import dev.langchain4j.model.openai.OpenAiChatModel;
 
 @RestController
 @RequestMapping("/api")
-public class DemoController {
+public class AgentController {
     private OpenAiChatModel model;
     private final AuthService auth;
-    public DemoController(AuthService auth) {
+    public AgentController(AuthService auth) {
         this.auth = auth;
 
         this.model = OpenAiChatModel.builder()
@@ -27,13 +27,13 @@ public class DemoController {
                 .modelName("gpt-4o-mini")
                 .build();
     }
-    @GetMapping
+    @GetMapping("/demo")
     public String demo() {
         return "hello absent minded";
     }
 
     @PostMapping("/gpt")
-    public String createTaskFromChat(@RequestHeader("Authorization") String authHeader,
+    public String createSimpleTask(@RequestHeader("Authorization") String authHeader,
                                      @RequestBody Map<String, String> body) throws IOException {
 
         String email = auth.emailFromAuthHeader(authHeader);

@@ -1,0 +1,22 @@
+version: 1
+
+services:
+  - type: web_service
+    name: spring-server
+    env: docker
+    plan: starter
+    dockerfilePath: Dockerfile
+    buildCommand: ./mvnw clean package -DskipTests
+    startCommand: java -jar target/*.jar
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+
+  - type: web_service
+    name: nginx-reverse-proxy
+    env: docker
+    plan: starter
+    dockerfilePath: nginx/Dockerfile
+    startCommand: nginx -g "daemon off;"
+    dependsOn:
+      - spring-server

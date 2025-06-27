@@ -1,32 +1,18 @@
 package absent_minded.absent_minded.controllers;
 
-import absent_minded.absent_minded.models.Project;
 import absent_minded.absent_minded.models.Task;
-import absent_minded.absent_minded.repositories.TaskRepository;
-import absent_minded.absent_minded.services.AuthService;
 import absent_minded.absent_minded.services.TaskService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/tasks")
 public class TaskController {
-
-    private final TaskRepository repo;
-    private final AuthService     auth;
     private final TaskService service;
 
-    public TaskController(
-            TaskRepository repo,
-            AuthService auth,
-            TaskService service) {
-        this.repo = repo;
-        this.auth = auth;
+    public TaskController(TaskService service) {
         this.service = service;
     }
 
@@ -42,41 +28,21 @@ public class TaskController {
     }
 
     @PostMapping
-    public List<Task> create(@RequestHeader("Authorization") String authHeader,
+    public List<Task> createTasks(@RequestHeader("Authorization") String header,
                              @RequestBody List<Task> tasks) {
-        String email = auth.emailFromAuthHeader(authHeader);
-        tasks.forEach(t -> {
-            List<String> participants = t.getParticipants();
-            if (!participants.contains(email)) {
-                t.setOwnerId(email);
-            }
-        });
-        return repo.saveAll(tasks);
+        return service.createTasks(header, tasks);
     }
 
     @PutMapping
-    public List<Task> update(@RequestHeader("Authorization") String authHeader,
+    public List<Task> updateTasks(@RequestHeader("Authorization") String header,
                              @RequestBody List<Task> tasks) {
-        String email = auth.emailFromAuthHeader(authHeader);
-        tasks.forEach(t -> {
-            List<String> participants = t.getParticipants();
-            if (!participants.contains(email)) {
-                t.setOwnerId(email);
-            }
-        });
-        return repo.saveAll(tasks);
+        return service.updateTasks(header, tasks);
     }
 
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@RequestHeader("Authorization") String authHeader,
+    public void deleteTasks(@RequestHeader("Authorization") String header,
                        @RequestBody List<String> ids) {
-        String email = auth.emailFromAuthHeader(authHeader);
-        List<Task> tasks = repo.findAllById(ids);
-        List<String> allowedToDelete = tasks.stream()
-                .filter(t -> email.equals(t.getOwnerId()) || t.getParticipants().contains(email))
-                .map(Task::getId)
-                .toList();
-        repo.deleteAllById(allowedToDelete);
+        service.deleteTasks(header, ids);
     }
 }

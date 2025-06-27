@@ -40,4 +40,36 @@ public class TaskService {
 
         return new ArrayList<>(allTasks);
     }
+
+    public List<Task> createTasks(String header, List<Task> tasks) {
+        String email = auth.emailFromAuthHeader(header);
+        tasks.forEach(t -> {
+            List<String> participants = t.getParticipants();
+            if (!participants.contains(email)) {
+                t.setOwnerId(email);
+            }
+        });
+        return repo.saveAll(tasks);
+    }
+
+    public List<Task> updateTasks(String header, List<Task> tasks) {
+        String email = auth.emailFromAuthHeader(header);
+        tasks.forEach(t -> {
+            List<String> participants = t.getParticipants();
+            if (!participants.contains(email)) {
+                t.setOwnerId(email);
+            }
+        });
+        return repo.saveAll(tasks);
+    }
+
+    public void deleteTasks(String header, List<String> ids) {
+        String email = auth.emailFromAuthHeader(header);
+        List<Task> tasks = repo.findAllById(ids);
+        List<String> allowedToDelete = tasks.stream()
+                .filter(t -> email.equals(t.getOwnerId()) || t.getParticipants().contains(email))
+                .map(Task::getId)
+                .toList();
+        repo.deleteAllById(allowedToDelete);
+    }
 }

@@ -34,6 +34,17 @@ public class User {
         this.created = LocalDateTime.now();
     }
 
+    public User(String id) {
+        this.id = id;
+        this.plan = "free";
+        this.tokenUsed = 0;
+
+        UserEvent firstEvent = new UserEvent("Signed up");
+        this.events = List.of(firstEvent);
+
+        this.created = LocalDateTime.now();
+    }
+
     public String getId() {
         return id;
     }

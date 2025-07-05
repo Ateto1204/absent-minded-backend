@@ -24,9 +24,8 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public User createUser(@RequestHeader("Authorization") String header,
-                           @RequestBody User user) {
-        return service.createUser(header, user);
+    public User createUser(@RequestHeader("Authorization") String header) {
+        return service.createUser(header);
     }
 
     @PutMapping("/plan")
@@ -46,11 +45,5 @@ public class UserController {
                               @RequestBody Map<String, Integer> body) {
         int tokens = body.getOrDefault("tokens", 0);
         return service.addTokenUsage(header, tokens);
-    }
-
-    @PostMapping("/event")
-    public User addHistoryEvent(@RequestHeader("Authorization") String header,
-                                @RequestBody Map<String, String> body) {
-        return service.addEvent(header, body);
     }
 }

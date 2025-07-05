@@ -28,25 +28,30 @@ public class UserService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
 
-    public User createUser(String header, User user) {
-        user.setCreated(LocalDateTime.now());
-        if (user.getPlan() == null) {
-            user.setPlan("free");
-        }
-        if (user.getEvents() == null) {
-            user.setEvents(List.of());
-        }
-        user.setTokenUsed(0);
+    public User createUser(String header) {
+        String requester = auth.emailFromAuthHeader(header);
+        User user = new User(requester);
         return repo.save(user);
     }
 
     public User updateUserPlan(String header, Map<String, String> body) {
         String requester = auth.emailFromAuthHeader(header);
-        User original = repo.findById(requester)
+        User user = repo.findById(requester)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         String plan = body.get("plan");
-        original.setPlan(plan);
-        return repo.save(original);
+
+        if (!user.getPlan().equals(plan)) {
+            user.setPlan(plan);
+            String event = "No mention";
+            switch (plan) {
+                case "pro" -> event = "Upgrade to pro plan";
+                case "free" -> event = "Downgrade to free plan";
+            }
+            addEvent(user, event);
+            return repo.save(user);
+        }
+
+        return user;
     }
 
     public void deleteUser(String header) {
@@ -63,17 +68,11 @@ public class UserService {
         return repo.save(user);
     }
 
-    public User addEvent(String header, Map<String, String> body) {
-        User user = getUserById(header);
-        String event = body.get("event");
-        if (event == null || event.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing history entry");
-        }
+    private void addEvent(User user, String event) {
         if (user.getEvents() == null) {
             user.setEvents(new java.util.ArrayList<>());
         }
         UserEvent userEvent = new UserEvent(event);
         user.getEvents().add(userEvent);
-        return repo.save(user);
     }
 }

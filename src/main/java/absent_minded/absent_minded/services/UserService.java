@@ -62,10 +62,10 @@ public class UserService {
         repo.deleteById(requester);
     }
 
-    public User addTokenUsage(String header, int tokens) {
+    public void addTokenUsage(String header, String prompt) {
         User user = getUserById(header);
-        user.setTokenUsed(user.getTokenUsed() + tokens);
-        return repo.save(user);
+        user.setTokenUsed(user.getTokenUsed() + prompt.length());
+        repo.save(user);
     }
 
     private void addEvent(User user, String event) {

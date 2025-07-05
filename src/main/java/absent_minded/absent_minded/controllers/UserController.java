@@ -39,11 +39,4 @@ public class UserController {
     public void deleteUser(@RequestHeader("Authorization") String header) {
         service.deleteUser(header);
     }
-
-    @PostMapping("/token-usage")
-    public User addTokenUsage(@RequestHeader("Authorization") String header,
-                              @RequestBody Map<String, Integer> body) {
-        int tokens = body.getOrDefault("tokens", 0);
-        return service.addTokenUsage(header, tokens);
-    }
 }

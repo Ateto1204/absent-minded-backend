@@ -1,80 +1,96 @@
 package absent_minded.absent_minded.controllers;
 
-import absent_minded.absent_minded.services.AuthService;
-import dev.langchain4j.model.openai.OpenAiChatModel;
-import org.junit.jupiter.api.BeforeEach;
+import absent_minded.absent_minded.services.AgentService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.server.ResponseStatusException;
 
-import static org.mockito.ArgumentMatchers.anyString;
+import java.util.Collections;
+import java.util.Map;
+
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(AgentController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
 public class AgentControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private AgentController controller;
-
     @MockitoBean
-    private AuthService authService;
+    private AgentService agentService;
 
-    @BeforeEach
-    void setup() {
-        // 模擬 AuthService 回傳 email
-        when(authService.emailFromAuthHeader("Bearer test-token"))
-                .thenReturn("test@example.com");
-
-        // 建立 mock 的 OpenAiChatModel 並回傳固定 JSON
-        OpenAiChatModel mockModel = Mockito.mock(OpenAiChatModel.class);
-        when(mockModel.chat(anyString()))
-                .thenReturn("""
-                        {
-                            "label": "測試任務",
-                            "description": "這是一段描述"
-                        }
-                        """);
-
-        // 用反射將 model 注入 controller
-        ReflectionTestUtils.setField(controller, "model", mockModel);
-    }
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
-    void testDemoEndpoint() throws Exception {
+    public void testDemo() throws Exception {
         mockMvc.perform(get("/api/demo"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("hello absent minded"));
     }
 
     @Test
-    void testGptEndpoint() throws Exception {
-        String requestBody = """
-                {
-                    "message": "幫我安排一個閱讀計畫"
-                }
-                """;
+    public void testCreateSimpleTask_success() throws Exception {
+        String header = "Bearer demo-token";
+        Map<String, String> body = Collections.singletonMap("message", "Test message");
+        String fakeResponse = "{\"label\":\"Task\",\"description\":\"Details\"}";
+
+        when(agentService.createSimpleTask(eq(header), eq(body)))
+                .thenReturn(fakeResponse);
 
         mockMvc.perform(post("/api/gpt")
-                        .header("Authorization", "Bearer test-token")
+                        .header("Authorization", header)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk())
-                .andExpect(content().json("""
-                        {
-                            "label": "測試任務",
-                            "description": "這是一段描述"
-                        }
-                        """));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().string(fakeResponse));
+    }
+
+    @Test
+    public void testCreateSimpleTask_badRequest() throws Exception {
+        String header = "Bearer demo-token";
+        Map<String, String> body = Collections.emptyMap();
+
+        when(agentService.createSimpleTask(eq(header), anyMap()))
+                .thenThrow(new ResponseStatusException(BAD_REQUEST, "Invalid prompt"));
+
+        mockMvc.perform(post("/api/gpt")
+                        .header("Authorization", header)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest())
+                .andExpect(status().reason("Invalid prompt"));
+    }
+
+    @Test
+    public void testCreateSimpleTask_unauthorized() throws Exception {
+        String header = "Bearer invalid-token";
+        Map<String, String> body = Collections.singletonMap("message", "Hi");
+
+        when(agentService.createSimpleTask(eq(header), anyMap()))
+                .thenThrow(new ResponseStatusException(UNAUTHORIZED, "Missing or invalid Authorization header"));
+
+        mockMvc.perform(post("/api/gpt")
+                        .header("Authorization", header)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(status().reason("Missing or invalid Authorization header"));
     }
 }

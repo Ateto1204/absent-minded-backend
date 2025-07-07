@@ -7,10 +7,8 @@ on:
       - 'nginx/**'
       - 'Dockerfile'
   pull_request:
-    paths:
-      - 'docker-compose.yml'
-      - 'nginx/**'
-      - 'Dockerfile'
+    branches:
+      - main
 
 jobs:
   build:

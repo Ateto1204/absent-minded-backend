@@ -28,6 +28,9 @@ public class UserService {
 
     public User createUser(String header) {
         String requester = auth.emailFromAuthHeader(header);
+        if (repo.existsById(requester)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User already exists");
+        }
         User user = new User(requester);
         return repo.save(user);
     }

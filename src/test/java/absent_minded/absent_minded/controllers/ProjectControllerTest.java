@@ -7,9 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -21,16 +20,15 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
+@WebMvcTest(ProjectController.class)
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
 public class ProjectControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private AuthService auth;
+    private AuthService authService;
     @MockitoBean
     private ProjectService projectService;
 
@@ -71,7 +69,7 @@ public class ProjectControllerTest {
         project.setOwnerId("user1");
         project.setParticipants(List.of("user2"));
 
-        when(auth.emailFromAuthHeader("Bearer test-token")).thenReturn("user1");
+        when(authService.emailFromAuthHeader("Bearer test-token")).thenReturn("user1");
         when(projectService.getProjectById("Bearer test-token", "1")).thenReturn(project);
 
         mockMvc.perform(get("/api/projects/1")

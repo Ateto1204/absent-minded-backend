@@ -7,8 +7,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -30,6 +28,9 @@ public class UserService {
 
     public User createUser(String header) {
         String requester = auth.emailFromAuthHeader(header);
+        if (repo.existsById(requester)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User already exists");
+        }
         User user = new User(requester);
         return repo.save(user);
     }

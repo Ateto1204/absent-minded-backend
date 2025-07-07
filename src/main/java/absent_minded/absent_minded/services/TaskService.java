@@ -3,7 +3,9 @@ package absent_minded.absent_minded.services;
 import absent_minded.absent_minded.models.Project;
 import absent_minded.absent_minded.models.Task;
 import absent_minded.absent_minded.repositories.TaskRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
@@ -32,44 +34,45 @@ public class TaskService {
     }
 
     public List<Task> getAllTasks(String header) {
-        String email = auth.emailFromAuthHeader(header);
-        Set<Task> allTasks = new HashSet<>();
-
-        allTasks.addAll(repo.findAllByOwnerId(email));
-        allTasks.addAll(repo.findAllByParticipantsContains(email));
-
-        return new ArrayList<>(allTasks);
+        List<Project> projects = projectService.getAllProjects(header);
+        List<String> projectIds = projects.stream()
+                .map(Project::getId)
+                .toList();
+        return repo.findAllByProjectIn(projectIds);
     }
 
     public List<Task> createTasks(String header, List<Task> tasks) {
-        String email = auth.emailFromAuthHeader(header);
-        tasks.forEach(t -> {
-            List<String> participants = t.getParticipants();
-            if (!participants.contains(email)) {
-                t.setOwnerId(email);
-            }
-        });
+        verifyVisitorByTasks(header, tasks);
         return repo.saveAll(tasks);
     }
 
     public List<Task> updateTasks(String header, List<Task> tasks) {
-        String email = auth.emailFromAuthHeader(header);
-        tasks.forEach(t -> {
-            List<String> participants = t.getParticipants();
-            if (!participants.contains(email)) {
-                t.setOwnerId(email);
-            }
-        });
+        verifyVisitorByTasks(header, tasks);
         return repo.saveAll(tasks);
     }
 
     public void deleteTasks(String header, List<String> ids) {
+        verifyVisitorByIds(header, ids);
+        repo.deleteAllById(ids);
+    }
+
+    private void verifyVisitorByTasks(String header, List<Task> tasks) {
         String email = auth.emailFromAuthHeader(header);
-        List<Task> tasks = repo.findAllById(ids);
-        List<String> allowedToDelete = tasks.stream()
-                .filter(t -> email.equals(t.getOwnerId()) || t.getParticipants().contains(email))
-                .map(Task::getId)
-                .toList();
-        repo.deleteAllById(allowedToDelete);
+        tasks.forEach(t -> {
+            Project project = projectService.getProjectById(header, t.getProject());
+            if (!project.getOwnerId().equals(email) && !project.getParticipants().contains(email)) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "NO access");
+            }
+        });
+    }
+
+    private void verifyVisitorByIds(String header, List<String> ids) {
+        String email = auth.emailFromAuthHeader(header);
+        ids.forEach(id -> {
+            Project project = projectService.getProjectById(header, id);
+            if (!project.getOwnerId().equals(email) && !project.getParticipants().contains(email)) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "NO access");
+            }
+        });
     }
 }

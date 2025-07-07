@@ -1,8 +1,6 @@
 package absent_minded.absent_minded.models;
 
 import jakarta.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "tasks")
@@ -18,14 +16,6 @@ public class Task {
 
     private String status;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "task_participants",
-            joinColumns = @JoinColumn(name = "task_id")
-    )
-    private List<String> participants = new ArrayList<>();
-
-    // getter/setter
     public String getId() {
         return id;
     }
@@ -72,13 +62,5 @@ public class Task {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public List<String> getParticipants() {
-        return participants;
-    }
-
-    public void setParticipants(List<String> participants) {
-        this.participants = participants;
     }
 }

@@ -42,21 +42,21 @@ public class TaskService {
     }
 
     public List<Task> createTasks(String header, List<Task> tasks) {
-        verifyTasksVisitor(header, tasks);
+        verifyVisitorByTasks(header, tasks);
         return repo.saveAll(tasks);
     }
 
     public List<Task> updateTasks(String header, List<Task> tasks) {
-        verifyTasksVisitor(header, tasks);
+        verifyVisitorByTasks(header, tasks);
         return repo.saveAll(tasks);
     }
 
     public void deleteTasks(String header, List<String> ids) {
-        verifyIdsVisitor(header, ids);
+        verifyVisitorByIds(header, ids);
         repo.deleteAllById(ids);
     }
 
-    private void verifyTasksVisitor(String header, List<Task> tasks) {
+    private void verifyVisitorByTasks(String header, List<Task> tasks) {
         String email = auth.emailFromAuthHeader(header);
         tasks.forEach(t -> {
             Project project = projectService.getProjectById(header, t.getProject());
@@ -66,7 +66,7 @@ public class TaskService {
         });
     }
 
-    private void verifyIdsVisitor(String header, List<String> ids) {
+    private void verifyVisitorByIds(String header, List<String> ids) {
         String email = auth.emailFromAuthHeader(header);
         ids.forEach(id -> {
             Project project = projectService.getProjectById(header, id);

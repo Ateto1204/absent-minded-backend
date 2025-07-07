@@ -1,8 +1,10 @@
 package absent_minded.absent_minded.models;
 
-import jakarta.persistence.Embeddable;
+import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Embeddable
 public class TaskData {
@@ -10,7 +12,15 @@ public class TaskData {
     private String description;
     private LocalDateTime start;
     private LocalDateTime deadline;
-    // getter/setter
+    private String url;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "task_assignees",
+            joinColumns = @JoinColumn(name = "task_id")
+    )
+    private List<String> assignees = new ArrayList<>();
+
     public String getLabel() {
         return label;
     }
@@ -41,5 +51,21 @@ public class TaskData {
 
     public void setDeadline(LocalDateTime deadline) {
         this.deadline = deadline;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public List<String> getAssignees() {
+        return assignees;
+    }
+
+    public void setAssignees(List<String> assignees) {
+        this.assignees = assignees;
     }
 }

@@ -24,7 +24,8 @@ public class AgentController {
 
     @GetMapping("/demo")
     public String demo() {
-        return "hello absent minded";
+        return agentService.getSimpleResponse("hello");
+//        return "hello absent minded";
     }
     
     @PostMapping("/gpt")

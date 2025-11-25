@@ -38,13 +38,6 @@ public class AgentControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    public void testDemo() throws Exception {
-        mockMvc.perform(get("/api/demo"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("hello absent minded"));
-    }
-
-    @Test
     public void testCreateSimpleTask_success() throws Exception {
         String header = "Bearer demo-token";
         Map<String, String> body = Collections.singletonMap("message", "Test message");

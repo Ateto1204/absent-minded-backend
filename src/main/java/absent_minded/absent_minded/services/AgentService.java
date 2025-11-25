@@ -24,6 +24,10 @@ public class AgentService {
                 .build();
     }
 
+    public String getSimpleResponse(String prompt) {
+        return model.chat(prompt);
+    }
+
     public String createSimpleTask(String header, Map<String, String> body) {
         String email = auth.emailFromAuthHeader(header);
         String userInput = body.get("message");
@@ -45,7 +49,7 @@ public class AgentService {
         String prompt = systemPrompt + "\nUser(" + email + "): " + userInput;
         String response = model.chat(prompt);
         if (response != null && !response.isBlank()) {
-            userService.addTokenUsage(header, userInput);
+//            userService.addTokenUsage(header, userInput);
         }
         return response;
     }

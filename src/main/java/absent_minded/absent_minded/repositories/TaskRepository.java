@@ -9,4 +9,7 @@ public interface TaskRepository extends JpaRepository<Task, String> {
     List<Task> findAllByOwnerId(String ownerId);
     List<Task> findAllByProject(String project);
     List<Task> findAllByProjectIn(List<String> projectIds);
+
+    List<Task> findAllByProjectAndParent(String projectId, String parentId);
+    List<Task> findAllByProjectAndParentIsNull(String projectId);
 }

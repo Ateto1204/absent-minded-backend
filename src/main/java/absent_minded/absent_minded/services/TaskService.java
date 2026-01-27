@@ -53,26 +53,34 @@ public class TaskService {
 
     public void deleteTasks(String header, List<String> ids) {
         verifyVisitorByIds(header, ids);
-        repo.deleteAllById(ids);
+
+        List<Task> tasks = repo.findAllById(ids);
+        repo.deleteAll(tasks);
     }
 
     private void verifyVisitorByTasks(String header, List<Task> tasks) {
         String email = auth.emailFromAuthHeader(header);
-        tasks.forEach(t -> {
-            Project project = projectService.getProjectById(header, t.getProject());
-            if (!project.getOwnerId().equals(email) && !project.getParticipants().contains(email)) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "NO access");
-            }
-        });
+        tasks.forEach(task -> verifyProjectAccess(header, task.getProject(), email));
     }
 
     private void verifyVisitorByIds(String header, List<String> ids) {
         String email = auth.emailFromAuthHeader(header);
-        ids.forEach(id -> {
-            Project project = projectService.getProjectById(header, id);
-            if (!project.getOwnerId().equals(email) && !project.getParticipants().contains(email)) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "NO access");
-            }
-        });
+        List<Task> tasks = repo.findAllById(ids);
+        if (tasks.size() != ids.size()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found");
+        }
+        tasks.forEach(task -> verifyProjectAccess(header, task.getProject(), email));
+    }
+
+    private void verifyProjectAccess(String header, String projectId, String email) {
+        Project project = projectService.getProjectById(header, projectId);
+        if (project == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "NO access");
+        }
+        List<String> participants = project.getParticipants();
+        boolean isParticipant = participants != null && participants.contains(email);
+        if (!project.getOwnerId().equals(email) && !isParticipant) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "NO access");
+        }
     }
 }

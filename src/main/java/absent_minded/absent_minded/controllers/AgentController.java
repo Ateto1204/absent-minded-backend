@@ -3,6 +3,7 @@ package absent_minded.absent_minded.controllers;
 import java.io.IOException;
 import java.util.Map;
 
+import absent_minded.absent_minded.models.dto.SuggestTaskRequest;
 import absent_minded.absent_minded.services.AgentService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,10 +34,22 @@ public class AgentController {
             @RequestHeader("Authorization") String header,
             @RequestBody Map<String, String> body
     ) throws IOException {
-        String result = agentService.createSimpleTask(header, body);
+        String result = agentService.createTaskWithHistoryRag(header, body);
         return ResponseEntity
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(result);
     }
+
+    @PostMapping("/suggest")
+    public AgentService.AgentResponse suggest(@RequestHeader("Authorization") String header,
+                                              @RequestBody SuggestTaskRequest req) {
+        return agentService.suggestTaskLocation(
+                header,
+                req.projectId(),
+                req.task().label(),
+                req.task().description()
+        );
+    }
+
 }

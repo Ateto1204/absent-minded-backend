@@ -10,5 +10,4 @@ public class AbsentMindedApplication {
 		System.out.println("DATASOURCE_URL=" + System.getenv("SPRING_DATASOURCE_URL"));
 		SpringApplication.run(AbsentMindedApplication.class, args);
 	}
-
 }

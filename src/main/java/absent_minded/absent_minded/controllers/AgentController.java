@@ -41,7 +41,7 @@ public class AgentController {
                 .body(result);
     }
 
-    @PostMapping("/suggest-task-location")
+    @PostMapping("/suggest")
     public AgentService.AgentResponse suggest(@RequestHeader("Authorization") String header,
                                               @RequestBody SuggestTaskRequest req) {
         return agentService.suggestTaskLocation(

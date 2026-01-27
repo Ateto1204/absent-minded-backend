@@ -53,7 +53,9 @@ public class TaskService {
 
     public void deleteTasks(String header, List<String> ids) {
         verifyVisitorByIds(header, ids);
-        repo.deleteAllById(ids);
+
+        List<Task> tasks = repo.findAllById(ids);
+        repo.deleteAll(tasks);
     }
 
     private void verifyVisitorByTasks(String header, List<Task> tasks) {

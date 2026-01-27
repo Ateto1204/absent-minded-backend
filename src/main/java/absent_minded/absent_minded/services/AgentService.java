@@ -213,7 +213,6 @@ public class AgentService {
     }
 
     private String explainWithRag(String query, HierarchyService.Suggestion sug) {
-
         String evidenceParents = toEvidenceText("同層最相關候選（TopK parents）", sug.parentTopK());
         String evidenceChildren = toEvidenceText("下一層最相關候選（TopK children）", sug.childTopK());
 
@@ -244,7 +243,15 @@ public class AgentService {
                 3) 若使用者其實想做的是別的方向，可能的替代放置點（1~2 個）
             """.formatted(query, sug.parentId(), sug.depth(), sug.ratio(), evidenceParents, evidenceChildren);
 
-        return model.chat(systemPrompt + "\n\n" + userPrompt);
+        String prompt = systemPrompt + "\n\n" + userPrompt;
+
+        long t0 = System.nanoTime();
+        String response = model.chat(prompt);
+        long t1 = System.nanoTime();
+
+        long ms = (t1 - t0) / 1_000_000;
+        log.info("[LLM] explainWithRag chat() took {} ms", ms);
+        return response;
     }
 
     private String toEvidenceText(String title, List<Task> tasks) {
@@ -287,6 +294,12 @@ public class AgentService {
         // 1) 先用「樹收斂演算法」決策（不讓 LLM 決定）
         HierarchyService.Suggestion sug =
                 hierrachyService.suggestParent(header, projectId, query, 5,5, 0.7, 10);
+
+        log.info("[SUG] parentTopK size={}, childTopK size={}, ratio={}, parentId={}, depth={}",
+                sug.parentTopK() == null ? -1 : sug.parentTopK().size(),
+                sug.childTopK() == null ? -1 : sug.childTopK().size(),
+                sug.ratio(), sug.parentId(), sug.depth());
+
 
         // 2) 再用 LLM 根據 evidence 解釋（RAG 的 G）
         String explanation = explainWithRag(query, sug);

@@ -44,7 +44,20 @@ public class AgentController {
     @PostMapping("/suggest")
     public AgentService.AgentResponse suggest(@RequestHeader("Authorization") String header,
                                               @RequestBody SuggestTaskRequest req) {
+        System.out.println("Received request: " + req);
         return agentService.suggestTaskLocation(
+                header,
+                req.projectId(),
+                req.task().label(),
+                req.task().description()
+        );
+    }
+
+    @PostMapping("/suggestest")
+    public AgentService.DualSuggestResponse suggestest(@RequestHeader("Authorization") String header,
+                                              @RequestBody SuggestTaskRequest req) {
+        System.out.println("Received request: " + req);
+        return agentService.suggestBoth(
                 header,
                 req.projectId(),
                 req.task().label(),

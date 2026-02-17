@@ -1,9 +1,12 @@
 package absent_minded.absent_minded.services;
 
+import absent_minded.absent_minded.models.Project;
 import absent_minded.absent_minded.repositories.TaskRepository;
 import absent_minded.absent_minded.models.Task;
 import absent_minded.absent_minded.models.TaskData;
 
+import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
+import dev.langchain4j.model.TokenCountEstimator;
 import dev.langchain4j.model.embedding.onnx.bgesmallzhv15q.BgeSmallZhV15QuantizedEmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.rag.content.Content;
@@ -24,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class AgentService {
@@ -36,7 +40,7 @@ public class AgentService {
     private final UserService userService;
     private final TaskRepository taskRepository;
     private final HierarchyService hierrachyService;
-
+    private final TokenCountEstimator tokenizer;
 
     public AgentService(
             AuthService auth,
@@ -55,7 +59,7 @@ public class AgentService {
                 .apiKey("demo")
                 .modelName("gpt-4o-mini")
                 .build();
-
+        this.tokenizer = new OpenAiTokenCountEstimator("gpt-4o-mini");
         // Embedding 模型：本地 BGE small zh v1.5 量化版（不用 API key）
         this.embeddingModel = new BgeSmallZhV15QuantizedEmbeddingModel();
     }
@@ -63,7 +67,24 @@ public class AgentService {
     public String getSimpleResponse(String prompt) {
         return model.chat(prompt);
     }
+    private record ChatMetricsResult(String text, int inputTokens, int outputTokens, long latencyMs) {}
 
+    private ChatMetricsResult chatWithMetrics(String prompt, String tag) {
+        int inputTokens = tokenizer.estimateTokenCountInText(prompt);
+
+        long t0 = System.nanoTime();
+        String text = model.chat(prompt);
+        long t1 = System.nanoTime();
+
+        long ms = (t1 - t0) / 1_000_000;
+        int outputTokens = text != null ? tokenizer.estimateTokenCountInText(text) : 0;
+
+        log.info("[LLM] {} latency={} ms, input={} output={} total={}",
+                tag, ms, inputTokens, outputTokens, inputTokens + outputTokens);
+
+        return new ChatMetricsResult(text, inputTokens, outputTokens, ms);
+    }
+    // 改這個方法：不帶歷史資料的簡單版本，讓你可以先測試基本的 LLM 整合，再慢慢加上 RAG
     public String createSimpleTask(String header, Map<String, String> body) {
         String email = auth.emailFromAuthHeader(header);
         String userInput = body.get("message");
@@ -83,31 +104,49 @@ public class AgentService {
             }
             """;
         String prompt = systemPrompt + "\nUser(" + email + "): " + userInput;
-        String response = model.chat(prompt);
+//        String response = model.chat(prompt);
+        ChatMetricsResult result = chatWithMetrics(prompt, "createSimpleTask");
+        String response = result.text();
         if (response != null && !response.isBlank()) {
             // userService.addTokenUsage(header, userInput);
         }
         return response;
     }
 
+
     private String buildFinalPrompt(String email, String historyContext, String userInput) {
 
         String systemPrompt = """
-            你現在是一個任務自動規劃助理，會先閱讀使用者以前建立的相關任務，再根據使用者這次的簡短描述，自動補全並回傳符合以下格式的 JSON 物件。
-
-            你必須：
-            1. 優先參考「歷史任務」中的寫法、風格、拆解方式
-            2. 讓新的任務在內容上「延續 / 協助完成」既有任務，而不是完全無關
-            3. 所有欄位都必須填寫合理內容，不能留空或 null
-            4. 若缺乏資訊，請根據情境合理假設，但要保持務實可執行
-
-            請只回傳 JSON 物件，不要有任何解釋或多餘文字。
-
-            資料格式如下：
-            {
-                "label": "一句話說明此任務主題",
-                "description": "請補全一段具體可執行的細節規劃或建議步驟"
-            }
+                你現在是一個任務自動規劃助理（擁有多年管理及 AI 規劃經驗），負責在任務管理平台中自動補齊與延伸任務。
+                
+                 【Context（情境）】
+                 這個平台以「任務樹（Task Tree）」形式呈現所有任務，每個任務之間存在層級與語意上的關聯。
+                 你的工作是：根據使用者的一段簡短輸入，以及現有的所有任務資料，判斷是否需要補充新的任務，並輸出完整的任務定義。
+                
+                 【Role（角色）】
+                 你是一名專業的任務自動規劃助理，擅長根據既有任務的層級與關聯性，推導出合理、具體且可執行的後續任務。
+                 你會延續使用者既有的任務架構風格與寫法，生成務實且可落地的規劃。
+                
+                 【Instruction（指令）】
+                 你必須：
+                 1. 優先參考「歷史任務」中的寫法、風格、拆解方式。
+                 2. 讓新的任務在內容上「延續或協助完成」既有任務，而不是完全無關。
+                 3. 所有欄位皆須填寫合理內容，不能留空或使用 null。
+                 4. 若缺乏資訊，請根據情境合理假設，並產出務實可執行的內容。
+                 5. 若已有重複或語意相同任務，請勿重複生成。
+                 6. 新任務需與至少一項現有任務具備明確關聯（作為子任務或父任務）。
+                 7. 一次僅產生一個新任務。
+                
+                 【Purpose（目的）】
+                 協助使用者自動補齊任務，使整體任務規劃更完整、清晰、可執行。
+                
+                 【Expectation（期望輸出）】
+                 請**只回傳 JSON 物件**，不要附帶任何解釋或其他文字。
+                 格式如下：
+                 {
+                     "label": "一句話說明此任務主題",
+                     "description": "請補全一段具體可執行的細節規劃或建議步驟"
+                 }
             """;
 
         String finalPrompt = systemPrompt
@@ -204,10 +243,12 @@ public class AgentService {
 
         String finalPrompt = buildFinalPrompt(email, historyContext, userInput);
 
-        String response = model.chat(finalPrompt);
-
+//        String response = model.chat(finalPrompt);
+        ChatMetricsResult result = chatWithMetrics(finalPrompt, "createTaskWithHistoryRag");
+        String response = result.text();
 
         log.info("[RAG] Model output for user {}: {}", email, response);
+        log.info("token:{},time:{} ms", result.inputTokens() + result.outputTokens(), result.latencyMs());
 
         return response;
     }
@@ -246,11 +287,14 @@ public class AgentService {
         String prompt = systemPrompt + "\n\n" + userPrompt;
 
         long t0 = System.nanoTime();
-        String response = model.chat(prompt);
+//        String response = model.chat(prompt);
+        ChatMetricsResult result = chatWithMetrics(prompt, "explainWithRag");
+        String response = result.text();
         long t1 = System.nanoTime();
 
         long ms = (t1 - t0) / 1_000_000;
         log.info("[LLM] explainWithRag chat() took {} ms", ms);
+        log.info("token:{},time:{} ms", result.inputTokens() + result.outputTokens(), result.latencyMs());
         return response;
     }
 
@@ -281,6 +325,97 @@ public class AgentService {
             double confidence,
             String explanation
     ) {}
+
+    public record DualSuggestResponse(
+            AgentResponse aiOnly,
+            AgentResponse hybrid
+    ) {}
+
+    public DualSuggestResponse suggestBoth(
+            String header,
+            String projectId,
+            String label,
+            String description
+    ) {
+        AgentResponse aiOnly = suggestTaskLocationByAi(header, projectId, label, description);
+        AgentResponse hybrid = suggestTaskLocation(header, projectId, label, description);
+
+        return new DualSuggestResponse(aiOnly, hybrid);
+    }
+
+
+    public AgentResponse suggestTaskLocationByAi(
+            String header,
+            String projectId,
+            String label,
+            String description) {
+
+        String query = (label == null ? "" : label) + " " + (description == null ? "" : description);
+
+        // 抓專案任務清單給 LLM
+        List<Task> allTasks = taskRepository.findAllByProject(projectId);
+        String taskContext = allTasks.stream()
+                .limit(15)
+                .map(t -> String.format("%s: %s (%s)",
+                        safe(t.getId()), safe(t.getData().getLabel()), safe(t.getParent())))
+                .collect(Collectors.joining("\n"));
+
+        String prompt = """
+        你是任務樹自動規劃專家，負責分析任務清單並決定新任務的最佳放置位置。
+        
+        【規則】
+        1. 仔細閱讀任務清單，找出與新任務語意最相近的任務
+        2. 考慮任務樹的層級邏輯：新任務應該是某任務的子任務，或平行任務
+        3. parentId 選最合適的那個任務ID，若完全不相關則用 null
+        4. **reason 要詳細解釋**：為什麼選這個位置、與哪些任務相關、樹狀結構考量
+        5. 只回傳 JSON，不要任何其他文字！
+        
+        【輸出格式】
+        {
+          "parentId": "任務ID或null",
+          "depth": 建議深度數字,
+          "confidence": 0.0-1.0,
+          "reason": "詳細說明你的決策過程，至少 3 句話，包含相似任務分析與樹狀邏輯"
+        }
+        
+        【任務清單】（格式：ID: 標題 (parentID)）
+        %s
+        
+        【新任務需求】
+        %s
+        
+        請根據任務清單結構與新任務內容，給出完整建議。
+        """.formatted(taskContext, query);
+
+
+        ChatMetricsResult result = chatWithMetrics(prompt, "suggestTaskLocationByAi");
+
+        // 簡單解析（生產用 JSON lib）
+        String parentId = extractJsonField(result.text(), "parentId");
+        int depth = extractJsonIntField(result.text(), "depth");
+        double confidence = extractJsonDoubleField(result.text(), "confidence");
+        String reason = extractJsonField(result.text(), "reason");
+
+        return new AgentResponse(parentId, depth, confidence, reason != null ? reason : "AI建議");
+    }
+
+    private String extractJsonField(String json, String field) {
+        if (json == null) return null;
+        String pattern = "\"" + field + "\":\\s*\"([^\"]+)\"";
+        var matcher = java.util.regex.Pattern.compile(pattern).matcher(json);
+        return matcher.find() ? matcher.group(1) : null;
+    }
+
+    private int extractJsonIntField(String json, String field) {
+        String val = extractJsonField(json, field);
+        return val != null ? Integer.parseInt(val) : 0;
+    }
+
+    private double extractJsonDoubleField(String json, String field) {
+        String val = extractJsonField(json, field);
+        return val != null ? Double.parseDouble(val) : 0.5;
+    }
+
 
 
     public AgentResponse suggestTaskLocation(

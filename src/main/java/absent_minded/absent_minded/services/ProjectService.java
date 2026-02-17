@@ -2,9 +2,12 @@ package absent_minded.absent_minded.services;
 
 import absent_minded.absent_minded.models.Project;
 import absent_minded.absent_minded.repositories.ProjectRepository;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import org.slf4j.Logger;
 
 import java.util.*;
 
@@ -13,6 +16,7 @@ public class ProjectService {
 
     private final ProjectRepository repo;
     private final AuthService auth;
+    private static final Logger log = LoggerFactory.getLogger(ProjectService.class);
 
     public ProjectService(ProjectRepository repo, AuthService auth) {
         this.repo = repo;
@@ -63,7 +67,10 @@ public class ProjectService {
                         new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
 
         original.setName(project.getName());
-        original.setRootTask(project.getRootTask());
+        String rt = project.getRootTask();
+        if (rt != null && !rt.isBlank()) {
+            original.setRootTask(rt);
+        }
 
         return repo.save(original);
     }

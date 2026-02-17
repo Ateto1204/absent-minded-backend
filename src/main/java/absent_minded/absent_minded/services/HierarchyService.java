@@ -180,11 +180,11 @@ public class HierarchyService {
             if (ratio <= M) {
                 log.debug("[HIERARCHY] depth {} ratio {} >= M {} → descend", depth,
                         String.format(Locale.US, "%.3f", ratio), String.format(Locale.US, "%.3f", M));
-                depth++;           // 交集大：孩子沒有搶走排名 → 往更深找
+                depth++;           // 交集小：父層並沒有占多數 -> 繼續往下找
             } else {
-                Task chosen = chooseParent(P, qVec); // 交集小：孩子很多更像 → 停在這層，parent 從 P 選
+                Task chosen = chooseParent(P, qVec); // 交集大：父層佔多數 -> 直接收斂在這一層
                 Suggestion result = Suggestion.placeUnder(chosen.getId(), depth, ratio, P, Pprime, traces);
-                logSuggestionResult(projectId, result, "ratio-below-threshold");
+                logSuggestionResult(projectId, result, "ratio-upon-threshold");
                 return result;
             }
         }

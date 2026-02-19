@@ -2,6 +2,7 @@ package absent_minded.absent_minded.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -11,10 +12,20 @@ import java.util.Base64;
 
 @Service
 public class AuthService {
+    @Value("${app.dev.owner:}")
+    private String devOwner;
+    @Value("${app.dev.bypassAuth:false}")
+    private boolean bypassAuth;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public String emailFromAuthHeader(String authHeader) {
+
+        if (bypassAuth && (authHeader == null || authHeader.isBlank() || "DEV".equalsIgnoreCase(authHeader))) {
+            return (devOwner != null && !devOwner.isBlank())
+                    ? devOwner
+                    : "test.user@absentminded.dev";
+        }
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,

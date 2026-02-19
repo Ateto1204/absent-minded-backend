@@ -55,9 +55,9 @@ public class AgentService {
 
         // Chat 模型：用 langchain4j 的 demo server（不用 API key）
         this.model = OpenAiChatModel.builder()
-                .baseUrl("http://langchain4j.dev/demo/openai/v1")
-                .apiKey("demo")
-                .modelName("gpt-4o-mini")
+                .baseUrl("http://localhost:11434/v1")
+                .apiKey("ollama")              // 隨便填，Ollama 不驗證
+                .modelName("qwen2.5:3b-instruct")
                 .build();
         this.tokenizer = new OpenAiTokenCountEstimator("gpt-4o-mini");
         // Embedding 模型：本地 BGE small zh v1.5 量化版（不用 API key）
@@ -161,7 +161,7 @@ public class AgentService {
 
     // ✅ 有 RAG 的版本：會用使用者歷史 Task 做檢索
     public String createTaskWithHistoryRag(String header, Map<String, String> body) {
-        String email = auth.emailFromAuthHeader(header);
+        String email = "test.user@absentminded.dev";
         String userInput = body.get("message");
 
         if (userInput == null || userInput.isBlank()) {
@@ -355,7 +355,7 @@ public class AgentService {
         // 抓專案任務清單給 LLM
         List<Task> allTasks = taskRepository.findAllByProject(projectId);
         String taskContext = allTasks.stream()
-                .limit(15)
+                .limit(1000)
                 .map(t -> String.format("%s: %s (%s)",
                         safe(t.getId()), safe(t.getData().getLabel()), safe(t.getParent())))
                 .collect(Collectors.joining("\n"));
@@ -392,11 +392,17 @@ public class AgentService {
 
         // 簡單解析（生產用 JSON lib）
         String parentId = extractJsonField(result.text(), "parentId");
-        int depth = extractJsonIntField(result.text(), "depth");
-        double confidence = extractJsonDoubleField(result.text(), "confidence");
+        Integer depth = extractJsonIntFieldFlexible(result.text(), "depth");
+        Double confidence = extractJsonDoubleFieldFlexible(result.text(), "confidence");
         String reason = extractJsonField(result.text(), "reason");
 
-        return new AgentResponse(parentId, depth, confidence, reason != null ? reason : "AI建議");
+        return new AgentResponse(
+                parentId,
+                depth != null ? depth : 0,
+                confidence != null ? confidence : 0.5,
+                reason != null ? reason : "AI建議"
+        );
+
     }
 
     private String extractJsonField(String json, String field) {
@@ -406,15 +412,22 @@ public class AgentService {
         return matcher.find() ? matcher.group(1) : null;
     }
 
-    private int extractJsonIntField(String json, String field) {
-        String val = extractJsonField(json, field);
-        return val != null ? Integer.parseInt(val) : 0;
+    private Integer extractJsonIntFieldFlexible(String json, String field) {
+        if (json == null) return null;
+        var m = java.util.regex.Pattern
+                .compile("\"" + field + "\"\\s*:\\s*(\"?)(-?\\d+)(\"?)")
+                .matcher(json);
+        return m.find() ? Integer.parseInt(m.group(2)) : null;
     }
 
-    private double extractJsonDoubleField(String json, String field) {
-        String val = extractJsonField(json, field);
-        return val != null ? Double.parseDouble(val) : 0.5;
+    private Double extractJsonDoubleFieldFlexible(String json, String field) {
+        if (json == null) return null;
+        var m = java.util.regex.Pattern
+                .compile("\"" + field + "\"\\s*:\\s*(\"?)(-?\\d+(?:\\.\\d+)?)(\"?)")
+                .matcher(json);
+        return m.find() ? Double.parseDouble(m.group(2)) : null;
     }
+
 
 
 

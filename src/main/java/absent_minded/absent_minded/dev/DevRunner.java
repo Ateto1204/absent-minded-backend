@@ -21,11 +21,13 @@ public class DevRunner implements CommandLineRunner {
     public void run(String... args) throws Exception {
 
         // 寫死
-        String projectId = "proj_demo_0050";
+        String projectId = "23ea7b6a-dedf-43f5-a5b5-94e088a0f9e1";
 
         // 你要測的「新任務內容」（刻意塞 RAG/metrics/log 讓它好命中）
-        String label = "新增 RAG Debug Log + Metrics";
-        String description = "希望在 log 分段印出 retrieved segments，並統計 token/latency；必要時加上 minScore 調整。";
+        String label = "建立WBS分解";
+
+        String description =
+                "請插入到項目管理流程的規劃階段。";
 
         System.out.println("\n==============================");
         System.out.println("DEV TEST: suggestTaskLocationByAi (AI decides parent/depth)");
